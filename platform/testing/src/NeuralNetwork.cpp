@@ -5,14 +5,31 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
+#include "EEPROM.h"
 
 const int kArenaSize = 16*1024;
 
 NeuralNetwork::NeuralNetwork()
 {
     error_reporter = new tflite::MicroErrorReporter();
+    
+    uint8_t modelLowByte = EEPROM.read(0);
+    uint8_t modelHighByte = EEPROM.read(1);
+    memoryModel_len = (modelHighByte << 8) | modelLowByte;
+    //Serial.println((String)"Loading the model with size: " + memoryModel_len);
+    
+    /*
+    Load stored model
 
-    model = tflite::GetModel(converted_model_tflite);
+    EEPROM addresses 0 -> 1 are low and high bytes of model size
+    Addresses 2 -> memoryModel_len are model values
+    */
+    memoryModel = new char[memoryModel_len];
+    for(int i = 0; i < memoryModel_len; i++){
+        memoryModel[i] = EEPROM.read(i+2);
+    }
+
+    model = tflite::GetModel(memoryModel);
     if (model->version() != TFLITE_SCHEMA_VERSION)
     {
         TF_LITE_REPORT_ERROR(error_reporter, "Model provided is schema version %d not equal to supported version %d.",
@@ -56,13 +73,11 @@ NeuralNetwork::NeuralNetwork()
     output = interpreter->output(0);
 }
 
-float *NeuralNetwork::getInputBuffer()
-{
+float *NeuralNetwork::getInputBuffer() {
     return input->data.f;
 }
 
-float *NeuralNetwork::predict()
-{
+float *NeuralNetwork::predict() {
     interpreter->Invoke();
     return output->data.f;
 }

@@ -3,8 +3,7 @@
 
 #include <stdint.h>
 
-namespace tflite
-{
+namespace tflite {
     template <unsigned int tOpCount>
     class MicroMutableOpResolver;
     class ErrorReporter;
@@ -14,8 +13,7 @@ namespace tflite
 
 struct TfLiteTensor;
 
-class NeuralNetwork
-{
+class NeuralNetwork {
 private:
     tflite::MicroMutableOpResolver<10> *resolver;
     tflite::ErrorReporter *error_reporter;
@@ -23,8 +21,10 @@ private:
     tflite::MicroInterpreter *interpreter;
     TfLiteTensor *input;
     TfLiteTensor *output;
-    alignas(16) uint8_t *tensor_arena;
 
+    alignas(16) uint8_t *tensor_arena;
+    char *memoryModel;
+    int memoryModel_len;
 public:
     float *getInputBuffer();
     NeuralNetwork();

@@ -1,20 +1,35 @@
 #include <Arduino.h>
-#include "NeuralNetwork.h"
 #include <string>
+#include "NeuralNetwork.h"
+#include "model_data.h"
+#include "EEPROM.h"
+
+#define EEPROM_SIZE 6000
+
+void manualWriteModel();
+void manualReadModel();
 
 NeuralNetwork *nn;
 int mode = 0;
 int modePin = 4;
 
-void setup()
-{
+uint8_t modelLowByte;
+uint8_t modelHighByte;
+int modelSize;
+alignas(16) unsigned char *memoryModel;
+char * test;
+
+
+void setup() {
   Serial.begin(115200);
+  EEPROM.begin(EEPROM_SIZE);
   pinMode(4, INPUT);
+
+  manualWriteModel();
   nn = new NeuralNetwork();
 }
 
-void loop()
-{
+void loop() {
   mode = digitalRead(modePin);
 
   if(!mode) {
@@ -66,15 +81,27 @@ void loop()
       default:
         strcpy(action, "Not Found");
     }
+
     Serial.println((String)"Action: " + action + " Index: " + index + " Value: " + resultVector[index] + " Mode: " + mode);
     //Serial.printf("action %s, index %d, resultVector: %.2f, Mode %d,\n", action, index, resultVector[2], mode);
 
     delay(1000);
   }
   else {
-    //to device
-    Serial.printf("Mode %d\n", mode);
-    delay(1000);
+    //Write new model from device 
+  }
+
+}
+
+void manualWriteModel() {
+  Serial.println("Writing");
+  modelLowByte = converted_model_tflite_len & 0xFF;
+  modelHighByte = (converted_model_tflite_len >> 8) & 0xFF;
+  EEPROM.write(0, modelLowByte);
+  EEPROM.write(1, modelHighByte);
+
+  for(int i  = 0; i < converted_model_tflite_len; i++){
+      EEPROM.write(i+2, converted_model_tflite[i]);
   }
 
 }

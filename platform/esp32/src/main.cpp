@@ -85,7 +85,7 @@ void loop() {
     Serial.println((String)"Action: " + action + " Index: " + index + " Value: " + resultVector[index] + " Mode: " + mode);
     //Serial.printf("action %s, index %d, resultVector: %.2f, Mode %d,\n", action, index, resultVector[2], mode);
 
-    delay(1000);
+    delay(10);
   }
   else {
     //Write new model from device 

@@ -13,20 +13,20 @@ NeuralNetwork::NeuralNetwork()
 {
     error_reporter = new tflite::MicroErrorReporter();
     
-    uint8_t modelLowByte = EEPROM.read(0);
-    uint8_t modelHighByte = EEPROM.read(1);
+    uint8_t modelLowByte = EEPROM.read(3000);
+    uint8_t modelHighByte = EEPROM.read(3001);
     memoryModel_len = (modelHighByte << 8) | modelLowByte;
     //Serial.println((String)"Loading the model with size: " + memoryModel_len);
     
     /*
     Load stored model
 
-    EEPROM addresses 0 -> 1 are low and high bytes of model size
-    Addresses 2 -> memoryModel_len are model values
+    EEPROM addresses 3000 -> 3001 are low and high bytes of model size
+    Addresses 3002 -> memoryModel_len are model values
     */
     memoryModel = new char[memoryModel_len];
     for(int i = 0; i < memoryModel_len; i++){
-        memoryModel[i] = EEPROM.read(i+2);
+        memoryModel[i] = EEPROM.read(i+3002);
     }
 
     model = tflite::GetModel(memoryModel);

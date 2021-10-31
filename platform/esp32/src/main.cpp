@@ -38,8 +38,8 @@ void setup() {
 	// Manual switch for swicthing modes
 	pinMode(4, INPUT);
 
-	// Writes a default model if one does not already exist
-	spiffManualWriteDefualtModel();
+	// Writes the default model to memory for testing purposes
+	//spiffManualWriteDefualtModel();
 
 	// New neural network object
 	nn = new NeuralNetwork();
@@ -110,7 +110,12 @@ void loop() {
 	}
 }
 
-// Writes the defualt model to the ESP32. If a model already exists it will just return
+/*
+Don't need to write the default model to memory because it already exists (model.cpp). This fucntion was used to test the SPIFF filesystem
+and see if writing and reading a model works as intended. Thas was ncessary because there is no current functionality to get a user model
+to the device to write to memory and read from.
+*/
+// Writes the defualt model to the ESP32. If a model already exists it will just return.
 void spiffManualWriteDefualtModel(){
 	//SPIFFS.remove("/model.txt");
 	bool modelExists = SPIFFS.exists("/model.txt");
@@ -131,7 +136,21 @@ void spiffManualWriteDefualtModel(){
 	}
 }
 
-// Writes a new model from user data to model.txt (Maybe have a default model and a user model to choose from just in case of corruption)
-void spiffWriteNewModel(char  newModel[]){
-	File file = SPIFFS.open("/test.txt");
+// Writes a new model from user data to /userModel.txt (Maybe have a default model and a user model to choose from just in case of corruption)
+void spiffWriteNewModel(char  newModel[], int newModelLen){
+	bool modelExists = SPIFFS.exists("/userModel.txt");
+	if(modelExists){
+		Serial.println("Deleting old user model");
+		SPIFFS.remove("/userModel.txt");
+	}
+	Serial.println("Writing new user model to /userModel.txt");
+	File file =  SPIFFS.open("/userModel.txt", FILE_WRITE); 
+	if(!file){
+		Serial.println("Failed to open file for writing");
+		return;
+	}
+	for(int i  = 0; i < newModelLen; i++){
+		file.print(newModel[i]);
+	}		
+	file.close();
 }

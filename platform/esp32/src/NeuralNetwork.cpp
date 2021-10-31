@@ -4,6 +4,7 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
+#include "model_data.h"
 #include "FS.h"
 #include "SPIFFS.h"
 
@@ -14,14 +15,23 @@ NeuralNetwork::NeuralNetwork()
     error_reporter = new tflite::MicroErrorReporter();  
 
     /*
-    Load stored model from /model.txt. 
+    Load stored model from /userModel.txt. If a user model does not exist, use the defualt model on the device
     -Model size should be the size of the file
     -Must be char [] for tensorflow GetModel() function
     */
-    File file = SPIFFS.open("/model.txt", FILE_READ);
-    memoryModel = new char[file.size()];
-    file.read((uint8_t *)memoryModel, file.size());  
-    file.close(); 
+   	bool userModel = SPIFFS.exists("/userModel.txt"); //change to /userModel.txt once that capability exists
+    if(userModel){
+        Serial.println("User model exists");
+        File file = SPIFFS.open("/userModel.txt", FILE_READ);
+        memoryModel = new char[file.size()];
+        file.read((uint8_t *)memoryModel, file.size());  
+        file.close(); 
+    }
+    else{
+        Serial.println("User model does not exists, using default model");
+        memoryModel = converted_model_tflite;
+    }
+
 
     model = tflite::GetModel(memoryModel);
     if (model->version() != TFLITE_SCHEMA_VERSION)

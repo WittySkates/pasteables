@@ -1,33 +1,27 @@
 #include "NeuralNetwork.h"
-#include "model_data.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
-#include "EEPROM.h"
+#include "FS.h"
+#include "SPIFFS.h"
 
 const int kArenaSize = 16*1024;
 
 NeuralNetwork::NeuralNetwork()
 {
-    error_reporter = new tflite::MicroErrorReporter();
-    
-    uint8_t modelLowByte = EEPROM.read(3000);
-    uint8_t modelHighByte = EEPROM.read(3001);
-    memoryModel_len = (modelHighByte << 8) | modelLowByte;
-    //Serial.println((String)"Loading the model with size: " + memoryModel_len);
-    
-    /*
-    Load stored model
+    error_reporter = new tflite::MicroErrorReporter();  
 
-    EEPROM addresses 3000 -> 3001 are low and high bytes of model size
-    Addresses 3002 -> memoryModel_len are model values
+    /*
+    Load stored model from /model.txt. 
+    -Model size should be the size of the file
+    -Must be char [] for tensorflow GetModel() function
     */
-    memoryModel = new char[memoryModel_len];
-    for(int i = 0; i < memoryModel_len; i++){
-        memoryModel[i] = EEPROM.read(i+3002);
-    }
+    File file = SPIFFS.open("/model.txt", FILE_READ);
+    memoryModel = new char[file.size()];
+    file.read((uint8_t *)memoryModel, file.size());  
+    file.close(); 
 
     model = tflite::GetModel(memoryModel);
     if (model->version() != TFLITE_SCHEMA_VERSION)

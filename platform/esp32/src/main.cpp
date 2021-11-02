@@ -9,6 +9,7 @@
 #define FORMAT_SPIFFS_IF_FAILED true
 
 void spiffManualWriteDefualtModel();
+void spiffWriteNewModel(char[], int, std::string);
 
 NeuralNetwork *nn;
 int mode = 0;
@@ -38,8 +39,8 @@ void setup() {
 	// Manual switch for swicthing modes
 	pinMode(4, INPUT);
 
-	// Writes the default model to memory for testing purposes
-	//spiffManualWriteDefualtModel();
+	//Need to build with this uncommented once, then it is saved in memory for future build.
+ 	//spiffWriteNewModel(converted_model_tflite, converted_model_tflite_len, "/defaultModel.txt");
 
 	// New neural network object
 	nn = new NeuralNetwork();
@@ -110,6 +111,25 @@ void loop() {
 	}
 }
 
+// Writes a new model with parameters
+void spiffWriteNewModel(char  newModel[], int newModelLen, std::string path){
+	bool modelExists = SPIFFS.exists(path.c_str());
+	if(modelExists){
+		Serial.println((String)"Deleting old " + path.c_str() + " model");
+		SPIFFS.remove(path.c_str());
+	}
+	Serial.println((String)"Writing new model to " + path.c_str());
+	File file =  SPIFFS.open(path.c_str(), FILE_WRITE); 
+	if(!file){
+		Serial.println("Failed to open file for writing");
+		return;
+	}
+	for(int i  = 0; i < newModelLen; i++){
+		file.print(newModel[i]);
+	}		
+	file.close();
+}
+
 /*
 Don't need to write the default model to memory because it already exists (model.cpp). This fucntion was used to test the SPIFF filesystem
 and see if writing and reading a model works as intended. Thas was ncessary because there is no current functionality to get a user model
@@ -134,23 +154,4 @@ void spiffManualWriteDefualtModel(){
 	else{
 		Serial.println("Default model already exists, skipping step");
 	}
-}
-
-// Writes a new model from user data to /userModel.txt (Maybe have a default model and a user model to choose from just in case of corruption)
-void spiffWriteNewModel(char  newModel[], int newModelLen){
-	bool modelExists = SPIFFS.exists("/userModel.txt");
-	if(modelExists){
-		Serial.println("Deleting old user model");
-		SPIFFS.remove("/userModel.txt");
-	}
-	Serial.println("Writing new user model to /userModel.txt");
-	File file =  SPIFFS.open("/userModel.txt", FILE_WRITE); 
-	if(!file){
-		Serial.println("Failed to open file for writing");
-		return;
-	}
-	for(int i  = 0; i < newModelLen; i++){
-		file.print(newModel[i]);
-	}		
-	file.close();
 }

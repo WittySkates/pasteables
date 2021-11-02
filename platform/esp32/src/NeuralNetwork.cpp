@@ -19,16 +19,22 @@ NeuralNetwork::NeuralNetwork()
     -Model size should be the size of the file
     -Must be char [] for tensorflow GetModel() function
     */
-   	bool userModel = SPIFFS.exists("/userModel.txt"); //change to /userModel.txt once that capability exists
-    if(userModel){
+    if(SPIFFS.exists("/userModel.txt")){
         Serial.println("User model exists");
         File file = SPIFFS.open("/userModel.txt", FILE_READ);
         memoryModel = new char[file.size()];
         file.read((uint8_t *)memoryModel, file.size());  
         file.close(); 
     }
-    else{
+    else if(SPIFFS.exists("/defaultModel.txt")){
         Serial.println("User model does not exists, using default model");
+        File file = SPIFFS.open("/defaultModel.txt", FILE_READ);
+        memoryModel = new char[file.size()];
+        file.read((uint8_t *)memoryModel, file.size());  
+        file.close(); 
+    }
+    else{
+        Serial.println("User model and default model do not exists, using built-in model");
         memoryModel = converted_model_tflite;
     }
 

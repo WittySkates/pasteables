@@ -15,6 +15,7 @@ NeuralNetwork *nn;
 int mode = 0;
 int modePin = 4;
 
+// Necessary if multiple slave devices are used
 // TwoWire i2c = TwoWire(0);
 // LSM6DS3Class myIMU(i2c, 0x6A);
 
@@ -107,7 +108,20 @@ void loop() {
 		delay(10);
 	}
 	else {
-		//Write new model from device
+		/*Receive model from external device and assign in to values*/
+		if(Serial.available()){
+			String command = Serial.readString();
+			unsigned int new_model_tflite_len = std::atoi(command.c_str());
+			Serial.println((String) "The new  model has  a length of " + command);
+
+			char new_model_tflite[new_model_tflite_len];
+			Serial.readBytes(new_model_tflite, new_model_tflite_len);
+			Serial.println((String) "The new  model has  been read ");
+
+			/*Writes the new model to memory (userModel)*/
+			spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
+			Serial.println((String)"Done writing new model to memory");
+		}
 	}
 }
 

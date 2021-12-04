@@ -11,16 +11,6 @@
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
-// void spiffManualWriteDefualtModel();
-// void spiffWriteNewModel(char[], int, std::string);
-// void onWsEventModel(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
-// void onWsEventOther(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
-
-/* 
-Credits to Nuno Santos's blog for websocket help. See article below:
- https://techtutorialsx.com/2018/09/13/esp32-arduino-web-server-receiving-data-from-javascript-websocket-client/ for websocket help 
- */
-
 // WiFi and Websocket variables
 const char* ssid = "Actiontec-7830-2.4G";
 const char* password =  "42389e65";

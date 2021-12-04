@@ -4,6 +4,11 @@
 #include "ESPAsyncWebServer.h"
 #include "filesystems.h"
 
+/* 
+Credits to Nuno Santos's blog for websocket help. See article below:
+ https://techtutorialsx.com/2018/09/13/esp32-arduino-web-server-receiving-data-from-javascript-websocket-client/ for websocket help 
+ */
+
 void onWsEventModel(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
 	if(type == WS_EVT_CONNECT){
 		Serial.println("Websocket client connection received for sending model data");

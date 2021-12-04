@@ -440,7 +440,7 @@ model = [
 
 const WebSocket = require("ws");
 // Create WebSocket connection.
-const socket = new WebSocket("ws://192.168.1.45/websocket");
+const socket = new WebSocket("ws://192.168.1.45/modelWS");
 
 // Connection opened
 socket.addEventListener("open", function (event) {

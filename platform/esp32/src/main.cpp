@@ -6,13 +6,15 @@
 #include "ESPAsyncWebServer.h"
 #include "filesystems.h"
 #include "NeuralNetwork.h"
+#include "websockets.h"
 #include "model_data.h"
 
 #define FORMAT_SPIFFS_IF_FAILED true
 
-void spiffManualWriteDefualtModel();
-void spiffWriteNewModel(char[], int, std::string);
-void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
+// void spiffManualWriteDefualtModel();
+// void spiffWriteNewModel(char[], int, std::string);
+// void onWsEventModel(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
+// void onWsEventOther(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
 
 /* 
 Credits to Nuno Santos's blog for websocket help. See article below:
@@ -23,7 +25,8 @@ Credits to Nuno Santos's blog for websocket help. See article below:
 const char* ssid = "Actiontec-7830-2.4G";
 const char* password =  "42389e65";
 AsyncWebServer server(80);
-AsyncWebSocket ws("/websocket");
+AsyncWebSocket modelWS("/modelWS");
+AsyncWebSocket otherWS("/otherWS");
 
 // Neural network object
 NeuralNetwork *nn;
@@ -66,8 +69,12 @@ void setup() {
 	}
 	Serial.println(WiFi.localIP());
 
-	ws.onEvent(onWsEvent);
-	server.addHandler(&ws);
+	modelWS.onEvent(onWsEventModel);
+	server.addHandler(&modelWS);
+
+	otherWS.onEvent(onWsEventOther);
+	server.addHandler(&otherWS);
+
 	server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
 		request->send(SPIFFS, "/websocket.html", "text/html");
 	});
@@ -145,7 +152,6 @@ void loop() {
 	}
 	else {
 		// Receive model through websocket and save it 
-		
 
 		// Receive model from through serial external device and assign in to values
 		// if(Serial.available()){
@@ -163,83 +169,5 @@ void loop() {
 		// 	spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
 		// 	Serial.println((String)"Done writing new model to memory");
 		// }
-	}
-}
-
-// Writes a new model with parameters
-void spiffWriteNewModel(char  newModel[], int newModelLen, std::string path){
-	bool modelExists = SPIFFS.exists(path.c_str());
-	if(modelExists){
-		Serial.println((String)"Deleting old " + path.c_str() + " model");
-		SPIFFS.remove(path.c_str());
-	}
-	Serial.println((String)"Writing new model to " + path.c_str());
-	File file =  SPIFFS.open(path.c_str(), FILE_WRITE); 
-	if(!file){
-		Serial.println("Failed to open file for writing");
-		return;
-	}
-	for(int i  = 0; i < newModelLen; i++){
-		file.print(newModel[i]);
-	}		
-	file.close();
-}
-
-/*
-Don't need to write the default model to memory because it already exists (model.cpp). This function was used to test the SPIFF filesystem
-and see if writing and reading a model works as intended. This was necessary because there was no functionality to get a user model
-to the device to write to memory and read from.
-*/
-// Writes the defualt model to the ESP32. If a model already exists it will just return.
-void spiffManualWriteDefualtModel(){
-	//SPIFFS.remove("/model.txt");
-	bool modelExists = SPIFFS.exists("/model.txt");
-	if(!modelExists){
-		Serial.println("File does not exist. Writing default model to /model.txt");
-		File file =  SPIFFS.open("/model.txt", FILE_WRITE); 
-		if(!file){
-			Serial.println("Failed to open file for writing");
-			return;
-		}
-		for(int i  = 0; i < converted_model_tflite_len; i++){
-			file.print(converted_model_tflite[i]);
-		}		
-		file.close();
-	}
-	else{
-		Serial.println("Default model already exists, skipping step");
-	}
-}
-
-// Handles websocket events
-void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
-	if(type == WS_EVT_CONNECT){
-		Serial.println("Websocket client connection received");
-	}
-	else if(type == WS_EVT_DISCONNECT){
-		Serial.println("Client disconnected");
-		Serial.println("-----------------------");
-	} 
-	// Receives model and saves it. This only handles model data, if anything other than a valid model is sent the program will run into a model error on reboot and crash.
-	else if(type == WS_EVT_DATA){
-		//data packet
-		AwsFrameInfo * info = (AwsFrameInfo*)arg;
-
-		int new_model_tflite_len = info->len;
-		char new_model_tflite[new_model_tflite_len];
-
-		for(size_t i=0; i < len; i++){
-			//printf("%02x ", data[i]);
-			new_model_tflite[info->index + i] = (char)data[i];
-		}
-
-		if((info->index + len) == info->len){
-			if(info->final){
-				Serial.println((String)"Model size: " + new_model_tflite_len);
-				spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
-				printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT)?"text":"binary");
-				client->text("Model received");
-			}
-		}
 	}
 }

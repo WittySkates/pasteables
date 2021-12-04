@@ -3,6 +3,52 @@
 
 #include "FS.h"
 #include "SPIFFS.h"
+#include "model_data.h"
+
+// Writes a new model with parameters
+void spiffWriteNewModel(char  newModel[], int newModelLen, std::string path){
+	bool modelExists = SPIFFS.exists(path.c_str());
+	if(modelExists){
+		Serial.println((String)"Deleting old " + path.c_str() + " model");
+		SPIFFS.remove(path.c_str());
+	}
+	Serial.println((String)"Writing new model to " + path.c_str());
+	File file =  SPIFFS.open(path.c_str(), FILE_WRITE); 
+	if(!file){
+		Serial.println("Failed to open file for writing");
+		return;
+	}
+	for(int i  = 0; i < newModelLen; i++){
+		file.print(newModel[i]);
+	}		
+	file.close();
+}
+
+/*
+Don't need to write the default model to memory because it already exists (model.cpp). This function was used to test the SPIFF filesystem
+and see if writing and reading a model works as intended. This was necessary because there was no functionality to get a user model
+to the device to write to memory and read from.
+*/
+// Writes the defualt model to the ESP32. If a model already exists it will just return.
+void spiffManualWriteDefualtModel(){
+	//SPIFFS.remove("/model.txt");
+	bool modelExists = SPIFFS.exists("/model.txt");
+	if(!modelExists){
+		Serial.println("File does not exist. Writing default model to /model.txt");
+		File file =  SPIFFS.open("/model.txt", FILE_WRITE); 
+		if(!file){
+			Serial.println("Failed to open file for writing");
+			return;
+		}
+		for(int i  = 0; i < converted_model_tflite_len; i++){
+			file.print(converted_model_tflite[i]);
+		}		
+		file.close();
+	}
+	else{
+		Serial.println("Default model already exists, skipping step");
+	}
+}
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
 	Serial.printf("Listing directory: %s\r\n", dirname);

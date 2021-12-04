@@ -220,60 +220,25 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 		Serial.println("Client disconnected");
 		Serial.println("-----------------------");
 	} 
+	// Receives model and saves it. This only handles model data, if anything other than a valid model is sent the program will run into a model error on reboot and crash.
 	else if(type == WS_EVT_DATA){
 		//data packet
 		AwsFrameInfo * info = (AwsFrameInfo*)arg;
 
-		char new_model_tflite[info->len];
 		int new_model_tflite_len = info->len;
+		char new_model_tflite[new_model_tflite_len];
 
-		if(info->final && info->index == 0 && info->len == len){
-			//the whole message is in a single frame and we got all of it's data
-			printf("ws[%s][%u] %s-message[%llu]: ", server->url(), client->id(), (info->opcode == WS_TEXT)?"text":"binary", info->len);
-			if(info->opcode == WS_TEXT){
-				data[len] = 0;
-				printf("%s\n", (char*)data);
-			} else {
-				for(size_t i=0; i < info->len; i++){
-					printf("%02x ", data[i]);
-				}
-				printf("\n");
-			}
-			if(info->opcode == WS_TEXT)
-				client->text("I got your text message");
-			else
-				client->binary("I got your binary message");
+		for(size_t i=0; i < len; i++){
+			//printf("%02x ", data[i]);
+			new_model_tflite[info->index + i] = (char)data[i];
 		}
-		else {
-			//message is comprised of multiple frames or the frame is split into multiple packets
-			if(info->index == 0){
-				if(info->num == 0)
-					printf("ws[%s][%u] %s-message start\n", server->url(), client->id(), (info->message_opcode == WS_TEXT)?"text":"binary");
-				printf("ws[%s][%u] frame[%u] start[%llu]\n", server->url(), client->id(), info->num, info->len);
-			}
 
-			printf("ws[%s][%u] frame[%u] %s[%llu - %llu]: ", server->url(), client->id(), info->num, (info->message_opcode == WS_TEXT)?"text":"binary", info->index, info->index + len);
-			if(info->message_opcode == WS_TEXT){
-				data[len] = 0;
-				printf("%s\n", (char*)data);
-			} else {
-				for(size_t i=0; i < len; i++){
-					printf("%02x ", data[i]);
-					new_model_tflite[info->index + i] = (char)data[i];
-				}
-				printf("\n");
-			}
-
-			if((info->index + len) == info->len){
-				printf("ws[%s][%u] frame[%u] end[%llu]\n", server->url(), client->id(), info->num, info->len);
-				if(info->final){
-					spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
-					printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT)?"text":"binary");
-					if(info->message_opcode == WS_TEXT)
-						client->text("I got your text message");
-					else
-						client->binary("I got your binary message");
-				}
+		if((info->index + len) == info->len){
+			if(info->final){
+				Serial.println((String)"Model size: " + new_model_tflite_len);
+				spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
+				printf("ws[%s][%u] %s-message end\n", server->url(), client->id(), (info->message_opcode == WS_TEXT)?"text":"binary");
+				client->text("Model received");
 			}
 		}
 	}

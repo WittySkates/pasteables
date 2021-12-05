@@ -59,10 +59,10 @@ void setup() {
 	}
 	Serial.println(WiFi.localIP());
 
-	modelWS.onEvent(onWsEventModel);
+	modelWS.onEvent(onWsEvent);
 	server.addHandler(&modelWS);
 
-	otherWS.onEvent(onWsEventOther);
+	otherWS.onEvent(onWsEvent);
 	server.addHandler(&otherWS);
 
 	server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){

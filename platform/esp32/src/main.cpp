@@ -24,12 +24,15 @@ NeuralNetwork *nn;
 int mode = 0;
 int modePin = 4;
 
+// Temporary holder for sensor data before sending to websocket
+std::string sensorStringData;
+
 // Necessary if multiple slave devices are used
 // TwoWire i2c = TwoWire(0);
 // LSM6DS3Class myIMU(i2c, 0x6A);
 
 void setup() {
-	// Instanciate IC2 communication with IMU. GPIO 21 and 22 for SDA and SCL respectively
+	// Instanciate I2C communication with IMU. GPIO 21 and 22 for SDA and SCL respectively
 	Wire.begin();
 
 	Serial.begin(115200);
@@ -84,80 +87,80 @@ void loop() {
 	// Read in the current switch value to determine mode
 	mode = digitalRead(modePin);
 
-	if(!mode) {
-
-		// IMU/IR data
-		float ir_dist = 0;
-		float inputs[7]; // acc_x, acc_y, acc_z, rot_x, rot_y, rot_z
-
-		// If IMU is available read sensors and then make a prediction
-		if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
+	// IMU/IR data
+	float ir_dist = 0;
+	float inputs[7]; // acc_x, acc_y, acc_z, rot_x, rot_y, rot_z
+	// If IMU is available read sensors
+	if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
 			IMU.readAcceleration(inputs[0], inputs[1], inputs[2]);
 			IMU.readGyroscope(inputs[3], inputs[4], inputs[5]);
 			inputs[6] = ir_dist;
-
 			//Serial.print((String) acc_x + '\t' + acc_y + "\t" + acc_z + "\t" + rot_x + "\t" + rot_y + "\t" + rot_z  + "\n");
+	}
+	if(!mode) {
+		// Put the inputs into the neural network input buffer
+		float * inputBuffer = nn->getInputBuffer();
+		std::copy(inputs, inputs+7, inputBuffer);
 
-			// Put the inputs into the neural network input buffer
-			float * inputBuffer = nn->getInputBuffer();
-			std::copy(inputs, inputs+7, inputBuffer);
+		// Make a prediction with the current values in the input buffer out push to output buffer
+		float *result = nn->predict();
 
-			// Make a prediction with the current values in the input buffer out push to output buffer
-			float *result = nn->predict();
+		// Store the results from the output buffer
+		std::vector<float> resultVector = {result[0], result[1],result[2],result[3],result[4],result[5]};
 
-			// Store the results from the output buffer
-			std::vector<float> resultVector = {result[0], result[1],result[2],result[3],result[4],result[5]};
+		// Output class  is the index with the maximum value
+		int index = std::distance(resultVector.begin(),std::max_element(resultVector.begin(), resultVector.end()));
 
-			// Output class  is the index with the maximum value
-			int index = std::distance(resultVector.begin(),std::max_element(resultVector.begin(), resultVector.end()));
-
-			// Convert index to readable value
-			std::string action;
-			switch(index) {
-				case 0:
-					action = "BicepCurls";
-					break;
-				case 1:
-					action = "Posture";
-					break;
-				case 2:
-					action = "SideLunges";
-					break;
-				case 3:
-					action = "Sitting";
-					break;
-				case 4:
-					action = "Squats";
-					break;
-				case 5:
-					action = "Standing";
-					break;
-				default:
-					action = "Not Found";
-			}
-			Serial.println((String)"Action: " + action.c_str() + " Index: " + index + " Value: " + resultVector[index] + " Mode: " + mode);
-			//Serial.printf("action %s, index %d, resultVector: %.2f, Mode %d,\n", action, index, resultVector[2], mode);
+		// Convert index to readable value
+		std::string action;
+		switch(index) {
+			case 0:
+				action = "BicepCurls";
+				break;
+			case 1:
+				action = "Posture";
+				break;
+			case 2:
+				action = "SideLunges";
+				break;
+			case 3:
+				action = "Sitting";
+				break;
+			case 4:
+				action = "Squats";
+				break;
+			case 5:
+				action = "Standing";
+				break;
+			default:
+				action = "Not Found";
 		}
+		Serial.println((String)"Action: " + action.c_str() + " Index: " + index + " Value: " + resultVector[index] + " Mode: " + mode);
+		//Serial.printf("action %s, index %d, resultVector: %.2f, Mode %d,\n", action, index, resultVector[2], mode);
+		
 		delay(10);
 	}
 	else {
-		// Receive model through websocket and save it 
+		// Stream sensor data over websocket to third party (one hop) device.
 
-		// Receive model from through serial external device and assign in to values
-		// if(Serial.available()){
-		// 	String command = Serial.readString();
-		// 	unsigned int new_model_tflite_len = std::atoi(command.c_str());
-		// 	Serial.println((String) "The new  model has  a length of " + command);
+		// printf("acc_x: %.2F acc_y:  %.2F acc_z:  %.2F rot_x:  %.2F rot_y:  %.2F rot_z:  %.2F\n", inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5]);
+		
+		//Add elements to vector (not needed) for iterator use
+		std::vector<float> sensorFrame = {inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5]};
 
-		// 	Serial.flush();
+		//Append sensorFrame to holder string
+		for (auto& el : sensorFrame){
+			sensorStringData += String(el, 2).c_str();
+			sensorStringData += ",";
+		}
+		sensorStringData += "\n";
 
-		// 	char new_model_tflite[new_model_tflite_len];
-		// 	Serial.readBytes(new_model_tflite, new_model_tflite_len);
-		// 	Serial.println((String) "The new  model has  been read ");
+		//Send sensor data chunk to device over websocket and reset string
+		if(strlen(sensorStringData.c_str()) >= 2600){
+			modelWS.textAll((char*)sensorStringData.c_str());
+			sensorStringData = "";
+		}
 
-		// 	//Writes the new model to memory (userModel)
-		// 	spiffWriteNewModel(new_model_tflite, new_model_tflite_len, "/userModel.txt");
-		// 	Serial.println((String)"Done writing new model to memory");
-		// }
+		delay(100);
 	}
 }

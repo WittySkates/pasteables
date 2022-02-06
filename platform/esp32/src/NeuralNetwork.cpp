@@ -17,7 +17,7 @@ NeuralNetwork::NeuralNetwork()
     /*
     Load stored model from /userModel.txt. If a user model does not exist, use the defualt model on the device
     -Model size should be the size of the file
-    -Must be char [] for tensorflow GetModel() function
+    -Must be char[]/char* for tensorflow GetModel() function
     */
     if(SPIFFS.exists("/userModel.txt")){
         Serial.println("User model exists");

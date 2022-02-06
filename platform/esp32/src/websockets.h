@@ -27,14 +27,13 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 		/* Receives model and saves it. This only handles model data, if anything other than a 
 		valid model is sent the program will run into a model error on reboot and crash. */
 		if(String(server->url()).equals("/modelWS")){
-			Serial.println("HOW MANY TIMES");
 
 			if(info->index == 0){
 				new_model_tflite_len = info->len;
 				new_model_tflite = new char[new_model_tflite_len];
 			}
 
-			for(size_t i=0; i < len; i++){
+			for(size_t i = 0; i < len; i++){
 				new_model_tflite[info->index + i] = (char)data[i];
 			}
 

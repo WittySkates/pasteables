@@ -1,0 +1,10 @@
+Tensor Flow:
+https://colab.research.google.com/github/tensorflow/tflite-micro/blob/main/tensorflow/lite/micro/examples/hello_world/train/train_hello_world_model.ipynb#scrollTo=JvRy0ZyMhQOX
+https://www.tensorflow.org/lite/microcontrollers
+https://github.com/tensorflow/tflite-micro
+https://www.youtube.com/watch?v=kZdIO82059E
+
+Websocket/Webserver:
+https://techtutorialsx.com/2018/09/13/esp32-arduino-web-server-receiving-data-from-javascript-websocket-client/
+https://www.megunolink.com/articles/wireless/talk-esp32-over-wifi/
+https://github.com/me-no-dev/ESPAsyncWebServer#async-websocket-event

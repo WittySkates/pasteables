@@ -156,11 +156,11 @@ void loop() {
 		sensorStringData += "\n";
 
 		//Send sensor data chunk to device over websocket and reset string
-		if(strlen(sensorStringData.c_str()) >= 2600){
+		if(sensorStringData.length() >= 1000){
 			modelWS.textAll((char*)sensorStringData.c_str());
 			sensorStringData = "";
 		}
 
-		delay(100);
+		delay(10);
 	}
 }
